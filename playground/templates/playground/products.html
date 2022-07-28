@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products</title>
+</head>
+<body>
+    <h2>All Products List</h2>
+    <ul>
+        {% for product in products %}
+            <li>
+                <h4>
+                    {{product.title}}
+                </h4>
+                <p>
+                    <b>Unit Price:</b> <span>{{product.unit_price}}</span>
+                </p>
+                <p>
+                    <b>Quantity:</b> <span>{{product.inventory}}</span>
+                </p>
+                <p>{{product.description}}</p>
+                <hr>
+            </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
