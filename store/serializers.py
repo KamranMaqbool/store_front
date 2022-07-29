@@ -6,7 +6,7 @@ from store.models import Collection, Product
 
 
 class CollectionSerializer(serializers.ModelSerializer):
-    products_count = serializers.IntegerField()
+    products_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Collection
@@ -41,7 +41,7 @@ class ProductsSerializer(serializers.ModelSerializer):
     collection = (
         serializers.PrimaryKeyRelatedField(
             queryset=Collection.objects.all())
-        )
+    )
     # collection = serializers.StringRelatedField()
     # collection = serializers.HyperlinkedRelatedField(
     #     queryset=Collection.objects.all(), view_name="collection-detail"
