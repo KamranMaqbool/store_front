@@ -7,8 +7,10 @@ from rest_framework.generics import (ListCreateAPIView,
                                      RetrieveUpdateDestroyAPIView)
 from rest_framework.mixins import CreateModelMixin, ListModelMixin
 from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from .filters import ProductFilter
 
 from .models import Collection, OrderItem, Product, Review
 from .serializers import CollectionSerializer, ProductsSerializer, ReviewSerializer
@@ -19,16 +21,8 @@ from .serializers import CollectionSerializer, ProductsSerializer, ReviewSeriali
 class ProductViewset(ModelViewSet):
     queryset = Product.objects.all()
     serializer_class = ProductsSerializer
-
-    def get_queryset(self):
-        queryset = Product.objects.all()
-        collection_id = self.request.query_params.get('collection_id')
-        if collection_id is not None:
-            queryset = queryset.filter(collection_id=collection_id)
-        return queryset
-
-    def get_serializer_context(self):
-        return {"request": self.request}
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = ProductFilter
 
     def destroy(self, request, *args, **kwargs):
         if OrderItem.objects.filter(product_id=kwargs['pk']).count() > 0:
