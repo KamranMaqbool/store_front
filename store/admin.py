@@ -75,10 +75,7 @@ class ProductAdmin(GuardedModelAdmin):
     @admin.action(description="Clear inventory")
     def clear_inventory(self, request, queryset):
         updated_count = queryset.update(inventory=0)
-        self.message_user(
-            request,
-            f"{updated_count} products updated successfully"
-        )
+        self.message_user(request, f"{updated_count} products updated successfully")
 
 
 @admin.register(Collection)
@@ -101,10 +98,7 @@ class CollectionAdmin(admin.ModelAdmin):
     #     return collection.products_count
 
     def get_queryset(self, request):
-        return (
-            super().get_queryset(request)
-            .annotate(products_count=Count("products"))
-        )
+        return super().get_queryset(request).annotate(products_count=Count("products"))
 
 
 @admin.register(Promotion)
@@ -156,7 +150,7 @@ class AddressAdmin(admin.ModelAdmin):
 
 @admin.register(Cart)
 class CartAdmin(admin.ModelAdmin):
-    list_display = ("created_at",)
+    list_display = ["id", "created_at"]
 
 
 @admin.register(CartItem)

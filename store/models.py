@@ -1,91 +1,103 @@
+from enum import unique
 from pydoc import describe
 from statistics import mode
 from turtle import title
+import uuid
 from django.db import models
 from django.core.validators import MinValueValidator
+from uuid import uuid4
 
 # Create your models here.
+
 
 class Promotion(models.Model):
     description = models.CharField(max_length=255)
     discount = models.FloatField()
 
+
 class Collection(models.Model):
     title = models.CharField(max_length=255)
-    featured_product = models.ForeignKey('Product', on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    featured_product = models.ForeignKey(
+        "Product", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
 
     def __str__(self):
         return self.title
 
     class Meta:
-        ordering = ['title']
+        ordering = ["title"]
+
 
 class Product(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
     slug = models.SlugField()
     unit_price = models.DecimalField(
-        max_digits=6,
-        decimal_places=2,
-        validators=[MinValueValidator(1)]
+        max_digits=6, decimal_places=2, validators=[MinValueValidator(1)]
     )
     inventory = models.IntegerField(validators=[MinValueValidator(0)])
     last_update = models.DateTimeField(auto_now=True)
     promotion = models.ManyToManyField(Promotion, blank=True)
-    collection = models.ForeignKey(Collection, on_delete=models.PROTECT, related_name="products")
+    collection = models.ForeignKey(
+        Collection, on_delete=models.PROTECT, related_name="products"
+    )
 
     def __str__(self):
         return self.title
 
     class Meta:
-        ordering = ['title']
+        ordering = ["title"]
 
-    
+
 class Customer(models.Model):
-    MEMBERSHIP_BRONZE = 'B'
-    MEMBERSHIP_SILVER = 'S'
-    MEMBERSHIP_GOLD = 'G'
+    MEMBERSHIP_BRONZE = "B"
+    MEMBERSHIP_SILVER = "S"
+    MEMBERSHIP_GOLD = "G"
     MEMBER_CHOICES = [
-        (MEMBERSHIP_BRONZE, 'Bronze'),
-        (MEMBERSHIP_SILVER, 'Silver'),
-        (MEMBERSHIP_GOLD, 'Gold'),
+        (MEMBERSHIP_BRONZE, "Bronze"),
+        (MEMBERSHIP_SILVER, "Silver"),
+        (MEMBERSHIP_GOLD, "Gold"),
     ]
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=255)
     birth_date = models.DateField(null=True)
-    membership = models.CharField(max_length=1, choices=MEMBER_CHOICES, default=MEMBERSHIP_BRONZE)
+    membership = models.CharField(
+        max_length=1, choices=MEMBER_CHOICES, default=MEMBERSHIP_BRONZE
+    )
 
     class Meta:
-        indexes = [
-            models.Index(fields=['last_name','first_name'])
-        ]
-        ordering = ['first_name', 'last_name']
+        indexes = [models.Index(fields=["last_name", "first_name"])]
+        ordering = ["first_name", "last_name"]
 
     def __str__(self):
-        return f'{self.first_name} {self.last_name}'
+        return f"{self.first_name} {self.last_name}"
 
 
 class Order(models.Model):
-    PAYMENT_STATUS_PENDING = 'P'
-    PAYMENT_STATUS_COMPLETE = 'C'
-    PAYMENT_STATUS_FAILED = 'F'
+    PAYMENT_STATUS_PENDING = "P"
+    PAYMENT_STATUS_COMPLETE = "C"
+    PAYMENT_STATUS_FAILED = "F"
 
     PAYMENT_STATUS_CHOICE = [
-        (PAYMENT_STATUS_PENDING, 'Pending'),
-        (PAYMENT_STATUS_COMPLETE, 'Complete'),
-        (PAYMENT_STATUS_FAILED, 'Failed')
+        (PAYMENT_STATUS_PENDING, "Pending"),
+        (PAYMENT_STATUS_COMPLETE, "Complete"),
+        (PAYMENT_STATUS_FAILED, "Failed"),
     ]
 
     placed_at = models.DateTimeField(auto_now_add=True)
-    payment_status = models.CharField(max_length=1, choices=PAYMENT_STATUS_CHOICE, default=PAYMENT_STATUS_PENDING)
+    payment_status = models.CharField(
+        max_length=1, choices=PAYMENT_STATUS_CHOICE, default=PAYMENT_STATUS_PENDING
+    )
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
 
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.PROTECT)
-    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="orderitems")
+    product = models.ForeignKey(
+        Product, on_delete=models.PROTECT, related_name="orderitems"
+    )
     quantity = models.PositiveSmallIntegerField()
     unit_price = models.DecimalField(max_digits=6, decimal_places=2)
 
@@ -93,16 +105,18 @@ class OrderItem(models.Model):
 class Address(models.Model):
     street = models.CharField(max_length=255)
     city = models.CharField(max_length=255)
-    customer = models.ForeignKey('Customer', on_delete=models.CASCADE)
+    customer = models.ForeignKey("Customer", on_delete=models.CASCADE)
 
 
 class Cart(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4)
     created_at = models.DateTimeField(auto_now_add=True)
 
+
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveSmallIntegerField()
+    quantity = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
 
 
 class Review(models.Model):
@@ -110,3 +124,17 @@ class Review(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField()
     date = models.DateTimeField(auto_now_add=True)
+
+
+class Car(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4)
+    created = models.DateTimeField(auto_now_add=True)
+
+
+class Cartem(models.Model):
+    cart = models.ForeignKey(Car, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveSmallIntegerField()
+
+    class Meta:
+        unique_together = [["cart", "product"]]

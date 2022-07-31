@@ -1,22 +1,30 @@
 from re import L
+
 from django.db.models import Count
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.decorators import api_view
-from rest_framework.generics import (ListCreateAPIView,
-                                     RetrieveUpdateDestroyAPIView)
-from rest_framework.mixins import CreateModelMixin, ListModelMixin
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin, DestroyModelMixin
+from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.views import APIView
-from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.viewsets import ModelViewSet
-from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
-from .pagination import DefaultPagination
-from .filters import ProductFilter
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
-from .models import Collection, OrderItem, Product, Review
-from .serializers import CollectionSerializer, ProductsSerializer, ReviewSerializer
+from .filters import ProductFilter
+from .models import Cart, CartItem, Collection, OrderItem, Product, Review
+from .pagination import DefaultPagination
+from .serializers import (
+    CartItemSerializer,
+    CartSerializer,
+    CollectionSerializer,
+    ProductsSerializer,
+    ReviewSerializer,
+    AddCartItemSerializer,
+    UpdateCartItemSerializer
+)
 
 # Create your views here.
 
@@ -26,12 +34,12 @@ class ProductViewset(ModelViewSet):
     serializer_class = ProductsSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
-    search_fields = ['title', 'description']
+    search_fields = ["title", "description"]
     pagination_class = DefaultPagination
-    ordering_fields = ['unit_price', 'last_update']
+    ordering_fields = ["unit_price", "last_update"]
 
     def destroy(self, request, *args, **kwargs):
-        if OrderItem.objects.filter(product_id=kwargs['pk']).count() > 0:
+        if OrderItem.objects.filter(product_id=kwargs["pk"]).count() > 0:
             return Response(
                 {
                     "error": "Product cannot be delete because order items associates with this"
@@ -48,7 +56,7 @@ class CollectionViewst(ModelViewSet):
     pagination_class = DefaultPagination
 
     def destroy(self, request, *args, **kwargs):
-        if Product.objects.filter(collection_id=kwargs['pk']).count() > 0:
+        if Product.objects.filter(collection_id=kwargs["pk"]).count() > 0:
             return Response(
                 {
                     "error": "Collection cannot be delete because many products are associates with this"
@@ -63,7 +71,32 @@ class ReviewViewset(ModelViewSet):
     serializer_class = ReviewSerializer
 
     def get_queryset(self):
-        return Review.objects.filter(product_id=self.kwargs['product_pk'])
+        return Review.objects.filter(product_id=self.kwargs["product_pk"])
 
     def get_serializer_context(self):
-        return {'product_id': self.kwargs['product_pk']}
+        return {"product_id": self.kwargs["product_pk"]}
+
+
+class CartViewset(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
+    queryset = Cart.objects.prefetch_related('items__product').all()
+    serializer_class = CartSerializer
+
+
+class CartItemViewset(ModelViewSet):
+
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return AddCartItemSerializer
+        elif self.request.method == 'PATCH':
+            return UpdateCartItemSerializer
+        return CartItemSerializer
+
+    def get_serializer_context(self):
+        return {"cart_id" : self.kwargs["cart_pk"]}
+
+    def get_queryset(self):
+        cart_id = self.kwargs.get('cart_pk')
+        if cart_id is not None:
+            return CartItem.objects.filter(cart_id=cart_id).select_related('product')
