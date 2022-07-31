@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "store.apps.StoreConfig",
     "tags.apps.TagsConfig",
     "likes.apps.LikesConfig",
+    "core.apps.CoreConfig",
     "guardian",
 ]
 
@@ -156,3 +157,6 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend', # this is default
     'guardian.backends.ObjectPermissionBackend',
 )
+
+
+AUTH_USER_MODEL = "core.User"
