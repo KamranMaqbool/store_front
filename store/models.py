@@ -3,9 +3,11 @@ from pydoc import describe
 from statistics import mode
 from turtle import title
 import uuid
+from django.conf import settings
 from django.db import models
 from django.core.validators import MinValueValidator
 from uuid import uuid4
+from django.contrib import admin
 
 # Create your models here.
 
@@ -58,21 +60,27 @@ class Customer(models.Model):
         (MEMBERSHIP_SILVER, "Silver"),
         (MEMBERSHIP_GOLD, "Gold"),
     ]
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
     phone = models.CharField(max_length=255)
     birth_date = models.DateField(null=True)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user")
     membership = models.CharField(
         max_length=1, choices=MEMBER_CHOICES, default=MEMBERSHIP_BRONZE
     )
 
     class Meta:
-        indexes = [models.Index(fields=["last_name", "first_name"])]
-        ordering = ["first_name", "last_name"]
+        ordering = ["user__first_name", "user__last_name"]
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+        return f"{self.user.first_name} {self.user.last_name}"
+
+    @admin.display(ordering="user__first_name")
+    def first_name(self):
+        return self.user.first_name
+
+    @admin.display(ordering="user__last_name")
+    def last_name(self):
+        return self.user.last_name
 
 
 class Order(models.Model):
@@ -91,6 +99,11 @@ class Order(models.Model):
         max_length=1, choices=PAYMENT_STATUS_CHOICE, default=PAYMENT_STATUS_PENDING
     )
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
+
+    class Meta:
+        permissions = [
+            ('cancel_order', 'Can Cancel Order'),
+        ]
 
 
 class OrderItem(models.Model):
@@ -114,9 +127,11 @@ class Cart(models.Model):
 
 
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    cart = models.ForeignKey(
+        Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
+    quantity = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(1)])
 
 
 class Review(models.Model):
@@ -132,7 +147,8 @@ class Car(models.Model):
 
 
 class Cartem(models.Model):
-    cart = models.ForeignKey(Car, on_delete=models.CASCADE, related_name="items")
+    cart = models.ForeignKey(
+        Car, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveSmallIntegerField()
 
