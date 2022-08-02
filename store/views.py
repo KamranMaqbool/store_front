@@ -7,19 +7,20 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin, DestroyModelMixin
+from rest_framework.mixins import CreateModelMixin, ListModelMixin, RetrieveModelMixin, DestroyModelMixin, UpdateModelMixin
 from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from .filters import ProductFilter
-from .models import Cart, CartItem, Collection, OrderItem, Product, Review
+from .models import Cart, CartItem, Collection, Customer, OrderItem, Product, Review
 from .pagination import DefaultPagination
 from .serializers import (
     CartItemSerializer,
     CartSerializer,
     CollectionSerializer,
+    CustomerSerializer,
     ProductsSerializer,
     ReviewSerializer,
     AddCartItemSerializer,
@@ -94,9 +95,14 @@ class CartItemViewset(ModelViewSet):
         return CartItemSerializer
 
     def get_serializer_context(self):
-        return {"cart_id" : self.kwargs["cart_pk"]}
+        return {"cart_id": self.kwargs["cart_pk"]}
 
     def get_queryset(self):
         cart_id = self.kwargs.get('cart_pk')
         if cart_id is not None:
             return CartItem.objects.filter(cart_id=cart_id).select_related('product')
+
+
+class CustomerViewset(CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, GenericViewSet):
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
