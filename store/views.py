@@ -15,7 +15,7 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser, DjangoModelPermissions
 
-from store.permissions import IsAdminOrReadyOnly
+from store.permissions import FullDjangoModelPermission, IsAdminOrReadyOnly
 
 from .filters import ProductFilter
 from .models import Cart, CartItem, Collection, Customer, OrderItem, Product, Review
@@ -110,7 +110,7 @@ class CartItemViewset(ModelViewSet):
 class CustomerViewset(ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    permission_classes = [DjangoModelPermissions]
+    permission_classes = [FullDjangoModelPermission]
 
     @action(detail=False, methods=['GET', 'PUT'], permission_classes=[IsAuthenticated])
     def me(self, request):
