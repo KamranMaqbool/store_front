@@ -15,6 +15,8 @@ from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
+from store.permissions import IsAdminOrReadyOnly
+
 from .filters import ProductFilter
 from .models import Cart, CartItem, Collection, Customer, OrderItem, Product, Review
 from .pagination import DefaultPagination
@@ -38,6 +40,7 @@ class ProductViewset(ModelViewSet):
     search_fields = ["title", "description"]
     pagination_class = DefaultPagination
     ordering_fields = ["unit_price", "last_update"]
+    permission_classes = [IsAdminOrReadyOnly]
 
     def destroy(self, request, *args, **kwargs):
         if OrderItem.objects.filter(product_id=kwargs["pk"]).count() > 0:
@@ -55,6 +58,7 @@ class CollectionViewst(ModelViewSet):
         products_count=Count("products")).all()
     serializer_class = CollectionSerializer
     pagination_class = DefaultPagination
+    permission_classes = [IsAdminOrReadyOnly]
 
     def destroy(self, request, *args, **kwargs):
         if Product.objects.filter(collection_id=kwargs["pk"]).count() > 0:
@@ -106,14 +110,9 @@ class CartItemViewset(ModelViewSet):
 class CustomerViewset(ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
-    # permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminOrReadyOnly]
 
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsAuthenticated()]
-
-    @action(detail=False, methods=['GET', 'PUT'])
+    @action(detail=False, methods=['GET', 'PUT'], permission_classes=[IsAuthenticated])
     def me(self, request):
         (customer, created) = Customer.objects.get_or_create(user_id=request.user.id)
         if request.method == 'GET':
