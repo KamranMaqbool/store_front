@@ -31,7 +31,8 @@ from .serializers import (
     ProductsSerializer,
     ReviewSerializer,
     AddCartItemSerializer,
-    UpdateCartItemSerializer
+    UpdateCartItemSerializer,
+    UpdateOrderSerializer
 )
 from store import serializers
 
@@ -137,12 +138,19 @@ class CustomerViewset(ModelViewSet):
 
 
 class OrderViewset(ModelViewSet):
+    http_method_names = ['get', 'post', 'patch', 'delete']
     pagination_class = DefaultPagination
-    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        if self.request.method in ['PATCH', 'DELETE']:
+            return [IsAdminUser()]
+        return [IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return CreateOderSerializer
+        elif self.request.method == 'PATCH':
+            return UpdateOrderSerializer
         return OrderSerializer
 
     def create(self, request, *args, **kwargs):
