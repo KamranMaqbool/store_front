@@ -1,3 +1,4 @@
+from multiprocessing import context
 from re import L
 
 from django.db.models import Count
@@ -24,6 +25,7 @@ from .serializers import (
     CartItemSerializer,
     CartSerializer,
     CollectionSerializer,
+    CreateOderSerializer,
     CustomerSerializer,
     OrderSerializer,
     ProductsSerializer,
@@ -31,6 +33,7 @@ from .serializers import (
     AddCartItemSerializer,
     UpdateCartItemSerializer
 )
+from store import serializers
 
 
 class ProductViewset(ModelViewSet):
@@ -134,6 +137,27 @@ class CustomerViewset(ModelViewSet):
 
 
 class OrderViewset(ModelViewSet):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
     pagination_class = DefaultPagination
+    permission_classes = [IsAuthenticated]
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return CreateOderSerializer
+        return OrderSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializers = CreateOderSerializer(data=request.data, context={
+                                           'user_id': self.request.user.id})
+        serializers.is_valid(raise_exception=True)
+        order = serializers.save()
+        serializers = OrderSerializer(order)
+        return Response(serializers.data)
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Order.objects.all()
+
+        (customer_id, created) = Customer.objects.only(
+            'id').get_or_create(user_id=user.id)
+        return Order.objects.filter(customer_id=customer_id)
